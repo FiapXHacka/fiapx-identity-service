@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FiapX.Identity.Domain/FiapX.Identity.Domain.csproj" />
+    <Project Path="src/FiapX.Identity.Application/FiapX.Identity.Application.csproj" />
+    <Project Path="src/FiapX.Identity.Infrastructure/FiapX.Identity.Infrastructure.csproj" />
+    <Project Path="src/FiapX.Identity.Api/FiapX.Identity.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FiapX.Identity.UnitTests/FiapX.Identity.UnitTests.csproj" />
+    <Project Path="tests/FiapX.Identity.IntegrationTests/FiapX.Identity.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
