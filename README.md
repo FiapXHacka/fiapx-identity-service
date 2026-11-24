@@ -37,7 +37,7 @@ src/
 tests/
   FiapX.Identity.UnitTests/         domínio, envelope CloudEvents (contrato), opções
   FiapX.Identity.IntegrationTests/  API real + Postgres e RabbitMQ via Testcontainers
-db/schema.sql                     DDL de referência (igual à migration inicial)
+db/schema.sql                     script idempotente gerado das migrations (verificado no CI)
 ```
 
 ### Mensageria (ADR-0006, ADR-0007)
@@ -50,16 +50,33 @@ db/schema.sql                     DDL de referência (igual à migration inicial
 
 ## Configuração
 
-| Variável | Exemplo | Descrição |
+Chaves canônicas da plataforma (as mesmas nos três serviços .NET). Credenciais só por variável de ambiente, nunca no `appsettings.json`.
+
+| Chave (env) | Padrão | Descrição |
 |---|---|---|
-| `ConnectionStrings__Postgres` | `Host=postgres;Database=identity_db;Username=identity_svc;Password=…` | Obrigatória |
-| `RabbitMq__Uri` | `amqp://user:pass@rabbitmq:5672/` | Obrigatória |
-| `Outbox__Enabled` / `Outbox__PollInterval` / `Outbox__BatchSize` | `true` / `00:00:01` / `50` | Relay da outbox |
-| `Database__MigrateOnStartup` | `true` | Aplica as migrations ao subir (local/compose) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel-lgtm:4317` | Liga a exportação OTLP |
+| `ConnectionStrings__Postgres` | — | Obrigatória (`Host=…;Database=identity_db;Username=identity_svc;Password=…`) |
+| `RabbitMq__Uri` | — | Obrigatória (`amqp://user:pass@rabbitmq:5672/`) |
+| `RabbitMq__ClientName` | `identity-service` | Nome da conexão no RabbitMQ |
+| `RabbitMq__Exchange` | `fiapx.events` | Exchange topic dos eventos |
+| `RabbitMq__DeadLetterExchange` | `fiapx.dlx` | Exchange de dead-letter |
+| `Outbox__Enabled` / `Outbox__PollInterval` / `Outbox__BatchSize` / `Outbox__MaxBackoff` | `true` / `00:00:01` / `50` / `00:00:30` | Relay da outbox |
+| `Auth__Issuer` | — | URL pública do emissor dos tokens (o gateway; `http://localhost:8080` localmente). Obrigatória a partir da #3 |
+| `Auth__Audience` | `fiapx-api` | Audiência dos tokens |
+| `Database__MigrateOnStartup` | `false` | `true` no docker-compose: aplica as migrations ao subir |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | — | Liga a exportação OTLP (ex.: `http://otel-lgtm:4317`) |
 | `OTEL_SERVICE_NAME` | `identity-service` | Nome do serviço nos traces |
 
 Endpoints: `GET /health/live` (sem dependências) e `GET /health/ready` (Postgres + RabbitMQ).
+
+### Schema do banco (ADR-0009)
+
+- As **migrations do EF Core são a fonte da verdade**. O `db/schema.sql` é a saída de
+  `dotnet ef migrations script --idempotent` e serve para revisão e para aplicar o schema fora da aplicação.
+- O CI falha se o modelo tiver mudanças sem migration (`dotnet ef migrations has-pending-model-changes`) ou se o
+  `db/schema.sql` não tiver sido regenerado depois da última migration.
+- `Database__MigrateOnStartup=true` é seguro com várias réplicas subindo juntas: desde o EF Core 9 a aplicação
+  das migrations pega um lock no banco, e o provider Npgsql implementa esse lock com `LOCK TABLE` na tabela
+  `__EFMigrationsHistory`, então só uma réplica migra por vez e as outras encontram o schema já atualizado.
 
 ## Desenvolvimento
 
@@ -71,6 +88,8 @@ dotnet build
 dotnet test                         # unit + integração (sobe Postgres e RabbitMQ em containers)
 dotnet ef migrations add <Nome> -p src/FiapX.Identity.Infrastructure -s src/FiapX.Identity.Infrastructure \
   -o Persistence/Migrations
+dotnet ef migrations script --idempotent -p src/FiapX.Identity.Infrastructure -s src/FiapX.Identity.Infrastructure \
+  -o db/schema.sql                  # sempre depois de uma migration nova
 docker build -t fiapx-identity-service .
 ```
 
@@ -78,5 +97,5 @@ Para subir a plataforma inteira localmente, use o `docker-compose.yml` do reposi
 
 ## CI
 
-`.github/workflows/ci.yml`: build → testes (unit + integração) com cobertura → SonarQube Cloud (análise *secretless* via OIDC)
+`.github/workflows/ci.yml`: build → verificação do schema → testes (unit + integração) com cobertura → SonarQube Cloud (análise *secretless* via OIDC)
 → build da imagem. Actions fixadas por SHA; Dependabot atualiza.
