@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\FiapX.Identity.Domain\FiapX.Identity.Domain.csproj" />
+  </ItemGroup>
+</Project>

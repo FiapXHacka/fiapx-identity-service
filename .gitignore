@@ -1,0 +1,11 @@
+bin/
+obj/
+TestResults/
+coverage*.xml
+*.user
+.vs/
+.idea/
+.vscode/
+.DS_Store
+.env
+appsettings.Local.json
