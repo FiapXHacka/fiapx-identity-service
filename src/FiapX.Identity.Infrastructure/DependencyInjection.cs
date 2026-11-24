@@ -1,6 +1,7 @@
 using FiapX.Identity.Application.Abstractions;
 using FiapX.Identity.Infrastructure.Messaging;
 using FiapX.Identity.Infrastructure.Persistence;
+using FiapX.Identity.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,10 @@ public static class DependencyInjection
 
         services.AddOptions<RabbitMqOptions>()
             .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddOptions<AuthOptions>()
+            .Bind(configuration.GetSection(AuthOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
         services.AddOptions<OutboxRelayOptions>()

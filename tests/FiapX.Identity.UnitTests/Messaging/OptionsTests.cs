@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using FiapX.Identity.Infrastructure.Messaging;
+using FiapX.Identity.Infrastructure.Security;
 
 namespace FiapX.Identity.UnitTests.Messaging;
 
@@ -17,8 +18,8 @@ public sealed class OptionsTests
     {
         var options = new RabbitMqOptions();
 
-        options.ExchangeName.ShouldBe("fiapx.events");
-        options.DeadLetterExchangeName.ShouldBe("fiapx.dlx");
+        options.Exchange.ShouldBe("fiapx.events");
+        options.DeadLetterExchange.ShouldBe("fiapx.dlx");
         options.ClientName.ShouldBe("identity-service");
     }
 
@@ -45,4 +46,28 @@ public sealed class OptionsTests
     public void Outbox_rejects_out_of_range_values() =>
         Validate(new OutboxRelayOptions { BatchSize = 0, PollInterval = TimeSpan.Zero, MaxBackoff = TimeSpan.FromHours(1) })
             .Count.ShouldBe(3);
+
+    [Fact]
+    public void Auth_defaults_to_the_platform_audience_and_no_issuer()
+    {
+        var options = new AuthOptions();
+
+        options.Audience.ShouldBe("fiapx-api");
+        options.Issuer.ShouldBeNull();
+        Validate(options).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Auth_accepts_an_absolute_issuer() =>
+        Validate(new AuthOptions { Issuer = new Uri("http://localhost:8080") }).ShouldBeEmpty();
+
+    [Fact]
+    public void Auth_rejects_a_relative_issuer() =>
+        Validate(new AuthOptions { Issuer = new Uri("/relative", UriKind.Relative) })
+            .ShouldContain(r => r.MemberNames.Contains(nameof(AuthOptions.Issuer)));
+
+    [Fact]
+    public void Auth_requires_an_audience() =>
+        Validate(new AuthOptions { Audience = "" })
+            .ShouldContain(r => r.MemberNames.Contains(nameof(AuthOptions.Audience)));
 }

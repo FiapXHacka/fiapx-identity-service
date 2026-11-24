@@ -9,11 +9,11 @@ namespace FiapX.Identity.IntegrationTests.Infrastructure;
 /// <summary>Real Postgres and RabbitMQ, started once for the whole test assembly.</summary>
 public sealed class PlatformFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17.12-alpine")
         .WithDatabase("identity_db")
         .Build();
 
-    private readonly RabbitMqContainer _rabbitMq = new RabbitMqBuilder("rabbitmq:4-management-alpine")
+    private readonly RabbitMqContainer _rabbitMq = new RabbitMqBuilder("rabbitmq:4.2.9-management")
         .Build();
 
     public string PostgresConnectionString => _postgres.GetConnectionString();

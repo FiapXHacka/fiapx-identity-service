@@ -34,7 +34,7 @@ public sealed class RabbitMqPublisher(RabbitMqConnection connection, IOptions<Ra
 
         using var activity = MessagingTelemetry.Source.StartActivity($"{message.Type} publish", ActivityKind.Producer);
         activity?.SetTag("messaging.system", "rabbitmq");
-        activity?.SetTag("messaging.destination.name", settings.ExchangeName);
+        activity?.SetTag("messaging.destination.name", settings.Exchange);
         activity?.SetTag("messaging.message.id", message.MessageId);
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -51,7 +51,7 @@ public sealed class RabbitMqPublisher(RabbitMqConnection connection, IOptions<Ra
             };
 
             // With publisher confirmation tracking enabled this awaits the broker's ack and throws on nack.
-            await channel.BasicPublishAsync(settings.ExchangeName, message.RoutingKey, mandatory: false,
+            await channel.BasicPublishAsync(settings.Exchange, message.RoutingKey, mandatory: false,
                 properties, message.Body, cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -78,9 +78,9 @@ public sealed class RabbitMqPublisher(RabbitMqConnection connection, IOptions<Ra
             new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
             cancellationToken).ConfigureAwait(false);
 
-        await channel.ExchangeDeclareAsync(settings.ExchangeName, ExchangeType.Topic, durable: true,
+        await channel.ExchangeDeclareAsync(settings.Exchange, ExchangeType.Topic, durable: true,
             autoDelete: false, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
-        await channel.ExchangeDeclareAsync(settings.DeadLetterExchangeName, ExchangeType.Direct, durable: true,
+        await channel.ExchangeDeclareAsync(settings.DeadLetterExchange, ExchangeType.Direct, durable: true,
             autoDelete: false, arguments: null, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         _channel = channel;

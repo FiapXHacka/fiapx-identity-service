@@ -19,6 +19,7 @@ public sealed class IdentityApiFactory(PlatformFixture platform, Action<IService
         builder.UseSetting("RabbitMq:Uri", platform.RabbitMqUri.ToString());
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Outbox:Enabled", "false");
+        builder.UseSetting("Auth:Issuer", "http://localhost:8080");
         if (configureServices is not null)
         {
             builder.ConfigureServices(configureServices);

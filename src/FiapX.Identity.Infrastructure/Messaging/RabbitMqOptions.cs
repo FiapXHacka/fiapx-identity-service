@@ -15,10 +15,10 @@ public sealed class RabbitMqOptions
 
     /// <summary>Topic exchange shared by the platform (docs/architecture/04-mensageria.md).</summary>
     [Required]
-    public string ExchangeName { get; set; } = "fiapx.events";
+    public string Exchange { get; set; } = "fiapx.events";
 
     [Required]
-    public string DeadLetterExchangeName { get; set; } = "fiapx.dlx";
+    public string DeadLetterExchange { get; set; } = "fiapx.dlx";
 }
 
 /// <summary>Outbox relay settings (section <c>Outbox</c>).</summary>
